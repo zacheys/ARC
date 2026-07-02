@@ -1,10 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { sessionCookieName, verifySessionToken } from "@/lib/session";
 
-// Protect committee dashboards. The public /submit routes are never matched.
-// Runs on the Edge runtime; verification uses Web Crypto (see lib/session).
+// Protect committee dashboards. The public /submit and /status routes are
+// never matched. Runs on the Edge runtime; verification uses Web Crypto
+// (see lib/session). Renamed from middleware.ts per Next.js 16 conventions.
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
   // /dashboard/<slug>/...  -> segments = ["dashboard", "<slug>", ...]

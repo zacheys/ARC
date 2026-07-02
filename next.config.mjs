@@ -9,10 +9,8 @@ const nextConfig = {
       },
     ],
   },
-  eslint: {
-    // Keep production builds unblocked by lint; run `npm run lint` separately.
-    ignoreDuringBuilds: true,
-  },
+  // Note: the `eslint` config key was removed in Next.js 16 (`next build` no
+  // longer runs ESLint). Linting is now a separate step if configured.
 };
 
 export default nextConfig;
