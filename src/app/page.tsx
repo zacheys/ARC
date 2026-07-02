@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Footer from "@/components/Footer";
+import Brand from "@/components/Brand";
 
 // Placeholder contact address — change to your real sales inbox.
 const CONTACT_EMAIL = "hello@arctrack.example.com";
@@ -51,9 +52,7 @@ export default function HomePage() {
       {/* Header */}
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-          <Link href="/" className="text-lg font-bold text-brand-700">
-            ARCTrack
-          </Link>
+          <Brand className="h-8 w-auto" priority />
           <div className="flex items-center gap-3">
             <Link
               href="/status"

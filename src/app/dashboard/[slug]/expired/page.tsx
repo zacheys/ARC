@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { requireSession } from "@/lib/auth";
 import Footer from "@/components/Footer";
+import Brand from "@/components/Brand";
 import { logout } from "../login/actions";
 import { BILLING_CONTACT_EMAIL, isDashboardBlocked } from "@/lib/plan";
 
@@ -45,7 +46,7 @@ export default async function TrialEndedPage({
     <div className="flex min-h-screen flex-col">
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="w-full max-w-md text-center">
-          <div className="text-lg font-bold text-brand-700">ARCTrack</div>
+          <Brand className="mx-auto h-9 w-auto" href={null} />
           <div className="card mt-6 p-8">
             <h1 className="text-xl font-semibold text-ink">
               Your free trial has ended

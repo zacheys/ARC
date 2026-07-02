@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { PlanStatus } from "@prisma/client";
 import { logout } from "@/app/dashboard/[slug]/login/actions";
 import { trialDaysLeft } from "@/lib/plan";
+import Brand from "./Brand";
 import Footer from "./Footer";
 
 type NavKey = "active" | "archive" | "settings";
@@ -46,10 +47,8 @@ export default function DashboardShell({
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto max-w-6xl px-4">
           <div className="flex h-14 items-center justify-between">
-            <div className="flex items-baseline gap-2">
-              <span className="text-base font-bold text-brand-700">
-                ARCTrack
-              </span>
+            <div className="flex items-center gap-2">
+              <Brand className="h-7 w-auto" />
               <span className="hidden text-sm text-ink-muted sm:inline">
                 &middot; {hoaName}
               </span>

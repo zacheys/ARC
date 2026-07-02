@@ -1,5 +1,5 @@
-import Link from "next/link";
 import Footer from "@/components/Footer";
+import Brand from "@/components/Brand";
 import SigninForm from "./SigninForm";
 
 export const metadata = {
@@ -12,9 +12,7 @@ export default function SigninPage() {
       <main className="flex flex-1 items-center justify-center px-4 py-12">
         <div className="w-full max-w-sm">
           <div className="mb-6 text-center">
-            <Link href="/" className="text-lg font-bold text-brand-700">
-              ARCTrack
-            </Link>
+            <Brand className="h-9 w-auto" />
             <h1 className="mt-4 text-xl font-semibold text-ink">
               Committee sign in
             </h1>

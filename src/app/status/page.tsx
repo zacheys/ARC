@@ -1,4 +1,5 @@
 import Footer from "@/components/Footer";
+import Brand from "@/components/Brand";
 import StatusLookup from "./StatusLookup";
 
 export const dynamic = "force-dynamic";
@@ -13,7 +14,7 @@ export default function StatusPage() {
       <main className="flex flex-1 items-start justify-center px-4 py-12">
         <div className="w-full max-w-md">
           <div className="mb-6 text-center">
-            <div className="text-lg font-bold text-brand-700">ARCTrack</div>
+            <Brand className="h-9 w-auto" />
             <h1 className="mt-4 text-xl font-semibold text-ink">
               Check your request status
             </h1>
