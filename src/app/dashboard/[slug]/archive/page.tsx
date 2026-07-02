@@ -77,7 +77,7 @@ export default async function ArchivePage({
         method="get"
         className="card mb-6 grid gap-3 p-4 sm:grid-cols-2 lg:grid-cols-6"
       >
-        <div className="lg:col-span-2">
+        <div className="min-w-0 lg:col-span-2">
           <label className="label" htmlFor="q">
             Property address
           </label>
@@ -89,7 +89,7 @@ export default async function ArchivePage({
             placeholder="Search address…"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="label" htmlFor="type">
             Type
           </label>
@@ -102,7 +102,7 @@ export default async function ArchivePage({
             ))}
           </select>
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="label" htmlFor="status">
             Status
           </label>
@@ -120,7 +120,7 @@ export default async function ArchivePage({
             ))}
           </select>
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="label" htmlFor="from">
             From
           </label>
@@ -129,10 +129,10 @@ export default async function ArchivePage({
             name="from"
             type="date"
             defaultValue={sp.from ?? ""}
-            className="input"
+            className="input min-w-0"
           />
         </div>
-        <div>
+        <div className="min-w-0">
           <label className="label" htmlFor="to">
             To
           </label>
@@ -141,7 +141,7 @@ export default async function ArchivePage({
             name="to"
             type="date"
             defaultValue={sp.to ?? ""}
-            className="input"
+            className="input min-w-0"
           />
         </div>
         <div className="flex items-end gap-2 sm:col-span-2 lg:col-span-6">
@@ -161,7 +161,41 @@ export default async function ArchivePage({
             No requests match your filters.
           </p>
         ) : (
-          <table className="w-full text-sm">
+          <>
+            {/* Mobile: stacked cards */}
+            <ul className="divide-y divide-gray-100 md:hidden">
+              {requests.map((r) => (
+                <li key={r.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <Link
+                      href={`/dashboard/${slug}/requests/${r.id}`}
+                      className="min-w-0 break-words font-medium text-brand-700 hover:underline"
+                    >
+                      {r.referenceNumber}
+                    </Link>
+                    <StatusBadge status={r.status} />
+                  </div>
+                  <div className="mt-1 text-xs text-ink-muted">
+                    {r.homeownerName}
+                  </div>
+                  <div className="mt-2 text-sm text-ink-soft">
+                    {r.propertyAddress}
+                  </div>
+                  <div className="mt-1 text-xs text-ink-muted">
+                    {REQUEST_TYPE_LABELS[r.requestType]}
+                  </div>
+                  <div className="mt-2 flex flex-wrap gap-x-4 text-xs text-ink-muted">
+                    <span>Submitted {formatDate(r.submittedAt)}</span>
+                    <span>
+                      Decided {r.decisionAt ? formatDate(r.decisionAt) : "—"}
+                    </span>
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {/* Desktop: table */}
+            <table className="hidden w-full text-sm md:table">
             <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase tracking-wide text-ink-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Reference</th>
@@ -204,7 +238,8 @@ export default async function ArchivePage({
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </>
         )}
       </div>
     </DashboardShell>

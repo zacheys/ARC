@@ -73,7 +73,43 @@ export default async function DashboardPage({
             No active requests. New submissions will appear here.
           </p>
         ) : (
-          <table className="w-full text-sm">
+          <>
+            {/* Mobile: stacked cards */}
+            <ul className="divide-y divide-gray-100 md:hidden">
+              {rows.map(({ request, deadline }) => (
+                <li key={request.id} className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <Link
+                      href={`/dashboard/${slug}/requests/${request.id}`}
+                      className="min-w-0 break-words font-medium text-brand-700 hover:underline"
+                    >
+                      {request.referenceNumber}
+                    </Link>
+                    <StatusBadge status={request.status} />
+                  </div>
+                  <div className="mt-1 text-xs text-ink-muted">
+                    {request.homeownerName}
+                  </div>
+                  <div className="mt-2 text-sm text-ink-soft">
+                    {request.propertyAddress}
+                  </div>
+                  <div className="mt-1 text-xs text-ink-muted">
+                    {REQUEST_TYPE_LABELS[request.requestType]}
+                  </div>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <DeadlinePill deadline={deadline} />
+                    {deadline && (
+                      <span className="text-xs text-ink-muted">
+                        {formatDate(deadline.date)}
+                      </span>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+
+            {/* Desktop: table */}
+            <table className="hidden w-full text-sm md:table">
             <thead className="border-b border-gray-200 bg-gray-50 text-left text-xs uppercase tracking-wide text-ink-muted">
               <tr>
                 <th className="px-4 py-3 font-medium">Reference</th>
@@ -121,7 +157,8 @@ export default async function DashboardPage({
                 </tr>
               ))}
             </tbody>
-          </table>
+            </table>
+          </>
         )}
       </div>
     </DashboardShell>
