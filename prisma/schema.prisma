@@ -40,6 +40,12 @@ enum DeliveryMethod {
   ELECTRONIC
 }
 
+enum PlanStatus {
+  TRIAL
+  ACTIVE
+  EXPIRED
+}
+
 enum ActivityType {
   SUBMITTED
   STATUS_CHANGE
@@ -65,12 +71,21 @@ model Hoa {
   reviewDeadlineDays    Int      @default(30) // CC&Rs vary; §209 does not fix this
   logoUrl               String? // Vercel Blob URL for letterhead
   referenceSeq          Int      @default(0) // monotonic counter for reference numbers
-  createdAt             DateTime @default(now())
-  updatedAt             DateTime @updatedAt
+
+  // Account / billing (trial only — no payment integration yet)
+  accountEmail      String // committee admin's email for account matters
+  emailVerified     Boolean    @default(false)
+  verificationToken String?    @unique // cleared once verified
+  trialEndsAt       DateTime // now + 30 days at signup
+  plan              PlanStatus @default(TRIAL)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   requests Request[]
 
   @@index([slug])
+  @@index([accountEmail])
 }
 
 model Request {

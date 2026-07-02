@@ -1,5 +1,7 @@
 import Link from "next/link";
+import type { PlanStatus } from "@prisma/client";
 import { logout } from "@/app/dashboard/[slug]/login/actions";
+import { trialDaysLeft } from "@/lib/plan";
 import Footer from "./Footer";
 
 type NavKey = "active" | "archive" | "settings";
@@ -14,16 +16,33 @@ export default function DashboardShell({
   slug,
   hoaName,
   active,
+  plan,
+  trialEndsAt,
   children,
 }: {
   slug: string;
   hoaName: string;
   active: NavKey;
+  plan?: PlanStatus;
+  trialEndsAt?: Date;
   children: React.ReactNode;
 }) {
   const logoutAction = logout.bind(null, slug);
+  const daysLeft =
+    plan === "TRIAL" && trialEndsAt ? trialDaysLeft({ plan, trialEndsAt }) : null;
   return (
     <div className="flex min-h-screen flex-col">
+      {daysLeft !== null && (
+        <div
+          className={`px-4 py-2 text-center text-sm font-medium ${
+            daysLeft <= 7
+              ? "bg-amber-100 text-amber-900"
+              : "bg-brand-50 text-brand-800"
+          }`}
+        >
+          Free trial &mdash; {daysLeft} day{daysLeft === 1 ? "" : "s"} left
+        </div>
+      )}
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto max-w-6xl px-4">
           <div className="flex h-14 items-center justify-between">

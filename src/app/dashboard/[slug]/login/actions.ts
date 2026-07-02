@@ -24,12 +24,23 @@ export async function login(
 
   const hoa = await prisma.hoa.findUnique({
     where: { slug },
-    select: { id: true, slug: true, committeePasswordHash: true },
+    select: {
+      id: true,
+      slug: true,
+      committeePasswordHash: true,
+      emailVerified: true,
+    },
   });
   if (!hoa) return { error: "Association not found." };
 
   const ok = await verifyPassword(password, hoa.committeePasswordHash);
   if (!ok) return { error: "Incorrect password." };
+
+  if (!hoa.emailVerified)
+    return {
+      error:
+        "Please verify your email before signing in. Check your inbox for the verification link.",
+    };
 
   const token = await createSessionToken({ hoaId: hoa.id, slug: hoa.slug });
   const store = await cookies();

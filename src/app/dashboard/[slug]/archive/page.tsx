@@ -1,8 +1,7 @@
 import Link from "next/link";
-import { notFound } from "next/navigation";
 import type { Prisma, RequestStatus, RequestType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/auth";
+import { requireActiveHoa } from "@/lib/auth";
 import DashboardShell from "@/components/DashboardShell";
 import StatusBadge from "@/components/StatusBadge";
 import { formatDate } from "@/lib/deadlines";
@@ -31,11 +30,8 @@ export default async function ArchivePage({
   }>;
 }) {
   const { slug } = await params;
-  await requireSession(slug);
+  const hoa = await requireActiveHoa(slug);
   const sp = await searchParams;
-
-  const hoa = await prisma.hoa.findUnique({ where: { slug } });
-  if (!hoa) notFound();
 
   const where: Prisma.RequestWhereInput = { hoaId: hoa.id };
   if (sp.q)
@@ -61,7 +57,13 @@ export default async function ArchivePage({
   });
 
   return (
-    <DashboardShell slug={slug} hoaName={hoa.name} active="archive">
+    <DashboardShell
+      slug={slug}
+      hoaName={hoa.name}
+      active="archive"
+      plan={hoa.plan}
+      trialEndsAt={hoa.trialEndsAt}
+    >
       <div className="mb-4">
         <h1 className="text-xl font-bold text-ink">Records Archive</h1>
         <p className="text-sm text-ink-muted">

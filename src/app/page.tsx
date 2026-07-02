@@ -84,7 +84,10 @@ export default function HomePage() {
               reminds your committee before a clock runs out.
             </p>
             <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/signin" className="btn-primary w-full sm:w-auto">
+              <Link href="/signup" className="btn-primary w-full sm:w-auto">
+                Start free trial
+              </Link>
+              <Link href="/signin" className="btn-secondary w-full sm:w-auto">
                 Committee sign in
               </Link>
               <Link href="/status" className="btn-secondary w-full sm:w-auto">
@@ -185,15 +188,21 @@ export default function HomePage() {
                   </li>
                 ))}
               </ul>
-              <a
-                href={`mailto:${CONTACT_EMAIL}?subject=ARCTrack%20for%20our%20association`}
-                className="btn-primary mt-8 w-full"
-              >
-                Contact us to get started
-              </a>
+              <Link href="/signup" className="btn-primary mt-8 w-full">
+                Start your free trial
+              </Link>
               <p className="mt-4 text-xs text-ink-muted">
-                No self-serve signup yet &mdash; we set up your association for
-                you.
+                30-day free trial. No credit card required.
+              </p>
+              <p className="mt-2 text-xs text-ink-muted">
+                Questions?{" "}
+                <a
+                  href={`mailto:${CONTACT_EMAIL}?subject=ARCTrack%20for%20our%20association`}
+                  className="text-brand-700 hover:underline"
+                >
+                  Contact us
+                </a>
+                .
               </p>
             </div>
           </div>

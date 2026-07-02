@@ -1,6 +1,4 @@
-import { notFound } from "next/navigation";
-import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/auth";
+import { requireActiveHoa } from "@/lib/auth";
 import DashboardShell from "@/components/DashboardShell";
 import { isBlobConfigured } from "@/lib/blob";
 import { SettingsForm, PasswordForm } from "./SettingsForms";
@@ -13,13 +11,16 @@ export default async function SettingsPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  await requireSession(slug);
-
-  const hoa = await prisma.hoa.findUnique({ where: { slug } });
-  if (!hoa) notFound();
+  const hoa = await requireActiveHoa(slug);
 
   return (
-    <DashboardShell slug={slug} hoaName={hoa.name} active="settings">
+    <DashboardShell
+      slug={slug}
+      hoaName={hoa.name}
+      active="settings"
+      plan={hoa.plan}
+      trialEndsAt={hoa.trialEndsAt}
+    >
       <div className="mb-4">
         <h1 className="text-xl font-bold text-ink">Settings</h1>
         <p className="text-sm text-ink-muted">

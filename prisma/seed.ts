@@ -41,6 +41,9 @@ async function main() {
 
   const passwordHash = await hashPassword(SEED_PASSWORD);
 
+  // Demo accounts are fully activated so seed data never hits the trial gate.
+  const farFutureTrialEnd = addDays(now, 3650);
+
   const oakRidge = await prisma.hoa.create({
     data: {
       slug: "oak-ridge",
@@ -48,6 +51,10 @@ async function main() {
       committeeEmails: ["arc@oakridge.example.com"],
       committeePasswordHash: passwordHash,
       reviewDeadlineDays: 30,
+      accountEmail: "admin@oakridge.example.com",
+      emailVerified: true,
+      plan: "ACTIVE",
+      trialEndsAt: farFutureTrialEnd,
     },
   });
 
@@ -58,6 +65,10 @@ async function main() {
       committeeEmails: ["committee@lakeside.example.com"],
       committeePasswordHash: passwordHash,
       reviewDeadlineDays: 45,
+      accountEmail: "admin@lakeside.example.com",
+      emailVerified: true,
+      plan: "ACTIVE",
+      trialEndsAt: farFutureTrialEnd,
     },
   });
 

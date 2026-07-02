@@ -2,6 +2,7 @@ import React from "react";
 import { renderToBuffer } from "@react-pdf/renderer";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
+import { isDashboardBlocked } from "@/lib/plan";
 import { buildDenialLetter } from "@/lib/letter";
 import { DenialLetterDocument } from "@/lib/DenialLetterPdf";
 
@@ -24,6 +25,8 @@ export async function GET(
     include: { hoa: true },
   });
   if (!request) return new Response("Not found", { status: 404 });
+  if (isDashboardBlocked(request.hoa))
+    return new Response("Trial ended", { status: 403 });
   if (!request.denialReasons)
     return new Response("This request has no denial on record.", {
       status: 400,

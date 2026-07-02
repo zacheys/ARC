@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/auth";
+import { requireActiveHoa } from "@/lib/auth";
 import DashboardShell from "@/components/DashboardShell";
 import StatusBadge from "@/components/StatusBadge";
 import DeadlinePill from "@/components/DeadlinePill";
@@ -35,7 +35,7 @@ export default async function RequestDetailPage({
   params: Promise<{ slug: string; id: string }>;
 }) {
   const { slug, id } = await params;
-  await requireSession(slug);
+  await requireActiveHoa(slug);
 
   const request = await prisma.request.findFirst({
     where: { id, hoa: { slug } },
@@ -57,7 +57,13 @@ export default async function RequestDetailPage({
   const letterHref = `/dashboard/${slug}/requests/${id}/letter`;
 
   return (
-    <DashboardShell slug={slug} hoaName={request.hoa.name} active="active">
+    <DashboardShell
+      slug={slug}
+      hoaName={request.hoa.name}
+      active="active"
+      plan={request.hoa.plan}
+      trialEndsAt={request.hoa.trialEndsAt}
+    >
       <Link
         href={`/dashboard/${slug}`}
         className="text-sm text-ink-muted hover:text-ink-soft"

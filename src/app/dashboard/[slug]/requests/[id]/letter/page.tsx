@@ -2,7 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { prisma } from "@/lib/prisma";
-import { requireSession } from "@/lib/auth";
+import { requireActiveHoa } from "@/lib/auth";
 import { buildDenialLetter } from "@/lib/letter";
 import PrintBar from "./PrintBar";
 
@@ -14,7 +14,7 @@ export default async function LetterPage({
   params: Promise<{ slug: string; id: string }>;
 }) {
   const { slug, id } = await params;
-  await requireSession(slug);
+  await requireActiveHoa(slug);
 
   const request = await prisma.request.findFirst({
     where: { id, hoa: { slug } },

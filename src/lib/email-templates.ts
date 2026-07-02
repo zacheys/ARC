@@ -17,6 +17,34 @@ const wrap = (title: string, body: string) => `
 const row = (label: string, value: string) =>
   `<tr><td style="padding:6px 12px 6px 0; color:#7b8794; font-size:13px; vertical-align:top;">${label}</td><td style="padding:6px 0; font-size:14px;">${value}</td></tr>`;
 
+export function verificationEmail(args: {
+  hoaName: string;
+  verifyUrl: string;
+  trialEndsAt: Date;
+}) {
+  const body = `
+    <p style="font-size:14px; line-height:1.6;">
+      Thanks for starting your ARCTrack free trial for
+      <strong>${args.hoaName}</strong>. Please confirm your email address to
+      activate your committee dashboard.
+    </p>
+    <p style="margin:20px 0;">
+      <a href="${args.verifyUrl}" style="background:#243b53; color:#fff; text-decoration:none; padding:10px 18px; border-radius:6px; font-size:14px; display:inline-block;">Verify email &amp; activate</a>
+    </p>
+    <p style="font-size:13px; line-height:1.6; color:#7b8794;">
+      Or paste this link into your browser:<br/>
+      <span style="word-break:break-all;">${args.verifyUrl}</span>
+    </p>
+    <p style="font-size:14px; line-height:1.6;">
+      Your 30-day free trial runs through
+      <strong>${formatDate(args.trialEndsAt)}</strong>. No credit card required.
+    </p>`;
+  return {
+    subject: `Verify your email to activate ARCTrack — ${args.hoaName}`,
+    html: wrap("Confirm your email", body),
+  };
+}
+
 export function homeownerConfirmationEmail(args: {
   hoaName: string;
   homeownerName: string;
