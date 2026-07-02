@@ -1,84 +1,203 @@
 import Link from "next/link";
-import { prisma } from "@/lib/prisma";
 import Footer from "@/components/Footer";
 
-export const dynamic = "force-dynamic";
+// Placeholder contact address — change to your real sales inbox.
+const CONTACT_EMAIL = "hello@arctrack.example.com";
 
-export default async function HomePage() {
-  const hoas = await prisma.hoa.findMany({
-    orderBy: { name: "asc" },
-    select: { id: true, slug: true, name: true, _count: { select: { requests: true } } },
-  });
+const CLOCKS = [
+  {
+    label: "Clock 1",
+    title: "Written denial",
+    body: "A denial must be in writing and state the specific reasons, along with the changes, if any, that would gain approval. ARCTrack requires both before a denial can be recorded.",
+  },
+  {
+    label: "Clock 2",
+    title: "30-day appeal window",
+    body: "The homeowner has 30 days from the date of the denial notice to request a hearing before the board. ARCTrack counts down that window from the notice date.",
+  },
+  {
+    label: "Clock 3",
+    title: "30-day hearing deadline",
+    body: "Once a hearing is requested, the board must hold it within 30 days. ARCTrack starts that clock automatically and surfaces it before time runs out.",
+  },
+];
 
+const FEATURES = [
+  {
+    title: "Deadline engine",
+    body: "Every request is tracked against its statutory clock and color-coded by urgency, so the committee always knows what needs attention first.",
+  },
+  {
+    title: "Denial letter generator",
+    body: "Produce a compliant denial letter with the required reasons, changes, and hearing-rights notice — viewable on screen and downloadable as a PDF.",
+  },
+  {
+    title: "Public submission form",
+    body: "Homeowners submit requests online with photos and documents. Confirmation and committee-notification emails go out automatically.",
+  },
+];
+
+const PRICING_INCLUDES = [
+  "Unlimited requests",
+  "Committee dashboard",
+  "Deadline reminders",
+  "Denial letter generator",
+  "Records archive",
+];
+
+export default function HomePage() {
   return (
     <div className="flex min-h-screen flex-col">
+      {/* Header */}
       <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
-          <div className="flex items-baseline gap-2">
-            <span className="text-lg font-bold text-brand-700">ARCTrack</span>
-            <span className="text-sm text-ink-muted">ARC Request Tracking</span>
+        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
+          <Link href="/" className="text-lg font-bold text-brand-700">
+            ARCTrack
+          </Link>
+          <div className="flex items-center gap-3">
+            <Link
+              href="/status"
+              className="hidden text-sm font-medium text-ink-soft hover:text-ink sm:inline"
+            >
+              Check request status
+            </Link>
+            <Link href="/signin" className="btn-primary">
+              Committee sign in
+            </Link>
           </div>
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-12">
-        <div className="max-w-2xl">
-          <h1 className="text-3xl font-bold tracking-tight text-ink">
-            Architectural review, tracked against the clock
-          </h1>
-          <p className="mt-4 text-ink-soft">
-            ARCTrack keeps every architectural request on schedule against the
-            procedural deadlines of{" "}
-            <span className="font-medium">
+      <main className="flex-1">
+        {/* Hero */}
+        <section className="border-b border-gray-200 bg-white">
+          <div className="mx-auto max-w-3xl px-4 py-20 text-center">
+            <span className="badge bg-brand-50 text-brand-700">
               Texas Property Code &sect;209.00505
-            </span>{" "}
-            &mdash; written denial notices, the homeowner&rsquo;s 30-day appeal
-            window, and the board&rsquo;s 30-day hearing deadline &mdash; so a
-            missed step never costs your association its ability to enforce a
-            decision.
-          </p>
-        </div>
-
-        <div className="mt-12">
-          <h2 className="text-sm font-semibold uppercase tracking-wide text-ink-muted">
-            Associations
-          </h2>
-          {hoas.length === 0 ? (
-            <div className="card mt-4 p-6 text-sm text-ink-soft">
-              No associations yet. Run{" "}
-              <code className="rounded bg-gray-100 px-1.5 py-0.5">
-                npm run db:seed
-              </code>{" "}
-              to load sample data.
+            </span>
+            <h1 className="mt-6 font-serif text-4xl font-bold leading-tight tracking-tight text-ink sm:text-5xl">
+              Never miss a statutory deadline on an architectural decision.
+            </h1>
+            <p className="mx-auto mt-6 max-w-2xl text-lg leading-relaxed text-ink-soft">
+              ARCTrack tracks every architectural request against the deadlines
+              Texas law requires, generates compliant denial letters, and
+              reminds your committee before a clock runs out.
+            </p>
+            <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+              <Link href="/signin" className="btn-primary w-full sm:w-auto">
+                Committee sign in
+              </Link>
+              <Link href="/status" className="btn-secondary w-full sm:w-auto">
+                Check request status
+              </Link>
             </div>
-          ) : (
-            <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {hoas.map((hoa) => (
-                <div key={hoa.id} className="card flex flex-col p-5">
-                  <h3 className="font-semibold text-ink">{hoa.name}</h3>
-                  <p className="mt-1 text-xs text-ink-muted">
-                    {hoa._count.requests} request
-                    {hoa._count.requests === 1 ? "" : "s"} on file
+          </div>
+        </section>
+
+        {/* The three clocks */}
+        <section className="mx-auto max-w-5xl px-4 py-20">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-ink">
+              The three clocks ARCTrack watches for you
+            </h2>
+            <p className="mt-3 text-ink-soft">
+              A missed step can cost an association the ability to enforce its
+              decision. These are the deadlines that matter most.
+            </p>
+          </div>
+          <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+            {CLOCKS.map((clock) => (
+              <div key={clock.title} className="card flex h-full flex-col p-6">
+                <span className="text-xs font-semibold uppercase tracking-wide text-brand-600">
+                  {clock.label}
+                </span>
+                <h3 className="mt-2 text-lg font-semibold text-ink">
+                  {clock.title}
+                </h3>
+                <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+                  {clock.body}
+                </p>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Features */}
+        <section className="border-y border-gray-200 bg-white">
+          <div className="mx-auto max-w-5xl px-4 py-20">
+            <div className="mx-auto max-w-2xl text-center">
+              <h2 className="text-2xl font-bold tracking-tight text-ink">
+                Built for the committee&rsquo;s workflow
+              </h2>
+              <p className="mt-3 text-ink-soft">
+                From the moment a request arrives to the day it is archived as a
+                permanent record.
+              </p>
+            </div>
+            <div className="mt-12 grid grid-cols-1 gap-6 md:grid-cols-3">
+              {FEATURES.map((feature) => (
+                <div
+                  key={feature.title}
+                  className="card flex h-full flex-col p-6"
+                >
+                  <h3 className="text-lg font-semibold text-ink">
+                    {feature.title}
+                  </h3>
+                  <p className="mt-3 text-sm leading-relaxed text-ink-soft">
+                    {feature.body}
                   </p>
-                  <div className="mt-4 flex gap-2">
-                    <Link
-                      href={`/submit/${hoa.slug}`}
-                      className="btn-primary flex-1"
-                    >
-                      Submit a request
-                    </Link>
-                    <Link
-                      href={`/dashboard/${hoa.slug}`}
-                      className="btn-secondary"
-                    >
-                      Committee
-                    </Link>
-                  </div>
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        </section>
+
+        {/* Pricing */}
+        <section className="mx-auto max-w-5xl px-4 py-20">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-2xl font-bold tracking-tight text-ink">
+              Simple pricing
+            </h2>
+            <p className="mt-3 text-ink-soft">
+              One plan per association. No tiers, no per-seat charges.
+            </p>
+          </div>
+          <div className="mx-auto mt-12 max-w-sm">
+            <div className="card flex flex-col p-8 text-center">
+              <div className="flex items-baseline justify-center gap-1">
+                <span className="text-4xl font-bold tracking-tight text-ink">
+                  $39
+                </span>
+                <span className="text-sm text-ink-muted">
+                  per association / month
+                </span>
+              </div>
+              <ul className="mt-8 space-y-3 text-left text-sm text-ink-soft">
+                {PRICING_INCLUDES.map((item) => (
+                  <li key={item} className="flex items-start gap-2">
+                    <span
+                      aria-hidden
+                      className="mt-0.5 font-semibold text-brand-600"
+                    >
+                      &#10003;
+                    </span>
+                    <span>{item}</span>
+                  </li>
+                ))}
+              </ul>
+              <a
+                href={`mailto:${CONTACT_EMAIL}?subject=ARCTrack%20for%20our%20association`}
+                className="btn-primary mt-8 w-full"
+              >
+                Contact us to get started
+              </a>
+              <p className="mt-4 text-xs text-ink-muted">
+                No self-serve signup yet &mdash; we set up your association for
+                you.
+              </p>
+            </div>
+          </div>
+        </section>
       </main>
 
       <Footer />
