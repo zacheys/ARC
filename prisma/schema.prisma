@@ -1,0 +1,150 @@
+// ARCTrack — Architectural Review Committee request tracking
+// Multi-HOA: each HOA has a URL slug + its own committee password.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL") // Neon POOLED connection string
+}
+
+// --------------------------------------------------------------------------
+// Enums
+// --------------------------------------------------------------------------
+
+enum RequestType {
+  FENCE
+  PAINT
+  ROOF
+  ADDITION
+  LANDSCAPING
+  SOLAR
+  OTHER
+}
+
+enum RequestStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  DENIED
+  APPEAL_REQUESTED
+  HEARING_SCHEDULED
+  APPEAL_RESOLVED
+}
+
+enum DeliveryMethod {
+  CERTIFIED_MAIL
+  HAND_DELIVERY
+  ELECTRONIC
+}
+
+enum ActivityType {
+  SUBMITTED
+  STATUS_CHANGE
+  NOTE
+  EMAIL_SENT
+  DENIAL_ISSUED
+  APPEAL_REQUESTED
+  HEARING_SCHEDULED
+  APPEAL_RESOLVED
+  REMINDER_SENT
+}
+
+// --------------------------------------------------------------------------
+// Models
+// --------------------------------------------------------------------------
+
+model Hoa {
+  id                    String   @id @default(cuid())
+  slug                  String   @unique // used in /submit/[slug] and /dashboard/[slug]
+  name                  String
+  committeeEmails       String[] // notified on new submissions + deadline reminders
+  committeePasswordHash String // scrypt hash; set via seed and rotatable in settings
+  reviewDeadlineDays    Int      @default(30) // CC&Rs vary; §209 does not fix this
+  logoUrl               String? // Vercel Blob URL for letterhead
+  referenceSeq          Int      @default(0) // monotonic counter for reference numbers
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  requests Request[]
+
+  @@index([slug])
+}
+
+model Request {
+  id              String @id @default(cuid())
+  referenceNumber String @unique // e.g. OAKS-2026-0007
+
+  hoaId String
+  hoa   Hoa    @relation(fields: [hoaId], references: [id], onDelete: Cascade)
+
+  // Homeowner
+  homeownerName   String
+  homeownerEmail  String
+  homeownerPhone  String?
+  propertyAddress String
+  requestType     RequestType
+  description     String
+
+  // Status
+  status RequestStatus @default(PENDING)
+
+  // Timestamps / deadline anchors
+  submittedAt      DateTime  @default(now())
+  reviewDeadlineAt DateTime // submittedAt + Hoa.reviewDeadlineDays
+  decisionAt       DateTime? // when APPROVED or DENIED was set
+
+  // Denial — §209.00505 statutorily required contents
+  denialReasons         String?
+  denialRequiredChanges String?
+  denialNoticeDate      DateTime?
+  denialDeliveryMethod  DeliveryMethod?
+  appealRequestWindowAt DateTime? // denialNoticeDate + 30 days (owner's window to request)
+
+  // Appeal track
+  appealRequestedAt  DateTime?
+  hearingDeadlineAt  DateTime? // appealRequestedAt + 30 days (board must hold hearing by)
+  hearingScheduledAt DateTime? // the actual scheduled hearing date/time
+  appealResolvedAt   DateTime?
+  appealResolution   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  attachments Attachment[]
+  activities  Activity[]
+
+  @@index([hoaId])
+  @@index([hoaId, status])
+  @@index([submittedAt])
+  @@index([propertyAddress])
+}
+
+model Attachment {
+  id          String   @id @default(cuid())
+  requestId   String
+  request     Request  @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  url         String // Vercel Blob URL
+  filename    String
+  contentType String
+  size        Int
+  createdAt   DateTime @default(now())
+
+  @@index([requestId])
+}
+
+model Activity {
+  id        String       @id @default(cuid())
+  requestId String
+  request   Request      @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  type      ActivityType
+  message   String
+  actor     String? // "committee" | "homeowner" | "system"
+  metadata  Json?
+  createdAt DateTime     @default(now())
+
+  @@index([requestId])
+  @@index([createdAt])
+}

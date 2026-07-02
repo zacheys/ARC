@@ -1,0 +1,17 @@
+import { PrismaClient } from "@prisma/client";
+
+// Reuse a single PrismaClient across hot reloads / serverless invocations.
+// With a Neon POOLED DATABASE_URL this keeps connection counts sane.
+const globalForPrisma = globalThis as unknown as {
+  prisma: PrismaClient | undefined;
+};
+
+export const prisma =
+  globalForPrisma.prisma ??
+  new PrismaClient({
+    log: process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"],
+  });
+
+if (process.env.NODE_ENV !== "production") {
+  globalForPrisma.prisma = prisma;
+}
