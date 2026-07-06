@@ -51,14 +51,17 @@ export default function HomePage() {
     <div className="flex min-h-screen flex-col">
       {/* Header */}
       <header className="border-b border-gray-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
+        <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-x-4 gap-y-3 px-4 py-4">
           <Brand className="h-8 w-auto" priority />
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <Link
               href="/status"
               className="hidden text-sm font-medium text-ink-soft hover:text-ink sm:inline"
             >
               Check request status
+            </Link>
+            <Link href="/submit" className="btn-secondary">
+              Submit a Request
             </Link>
             <Link href="/signin" className="btn-primary">
               Committee sign in
