@@ -4,7 +4,11 @@ import { prisma } from "@/lib/prisma";
 import { requireActiveHoa } from "@/lib/auth";
 import DashboardShell from "@/components/DashboardShell";
 import StatusBadge from "@/components/StatusBadge";
-import { formatDate } from "@/lib/deadlines";
+import {
+  formatDate,
+  centralStartOfDay,
+  centralEndOfDayExclusive,
+} from "@/lib/deadlines";
 import {
   REQUEST_TYPE_LABELS,
   REQUEST_TYPE_OPTIONS,
@@ -42,12 +46,9 @@ export default async function ArchivePage({
     where.status = sp.status as RequestStatus;
   if (sp.from || sp.to) {
     where.submittedAt = {};
-    if (sp.from) where.submittedAt.gte = new Date(sp.from);
-    if (sp.to) {
-      const to = new Date(sp.to);
-      to.setHours(23, 59, 59, 999);
-      where.submittedAt.lte = to;
-    }
+    // Boundaries are interpreted as Central calendar days (see lib/deadlines).
+    if (sp.from) where.submittedAt.gte = centralStartOfDay(sp.from);
+    if (sp.to) where.submittedAt.lt = centralEndOfDayExclusive(sp.to);
   }
 
   const requests = await prisma.request.findMany({

@@ -9,6 +9,7 @@ import {
   computeAppealWindow,
   computeHearingDeadline,
   formatDate,
+  formatDateTime,
 } from "@/lib/deadlines";
 import { STATUS_LABELS, DELIVERY_METHOD_LABELS } from "@/lib/labels";
 import { sendEmail } from "@/lib/email";
@@ -204,7 +205,7 @@ export async function scheduleHearing(
   await logActivity(
     id,
     "HEARING_SCHEDULED",
-    `Hearing scheduled for ${hearingScheduledAt.toLocaleString("en-US")}.${
+    `Hearing scheduled for ${formatDateTime(hearingScheduledAt)}.${
       warnLate ? " ⚠️ This is AFTER the 30-day statutory deadline." : ""
     }`,
     { actor: "committee" }

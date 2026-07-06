@@ -7,7 +7,7 @@ import DashboardShell from "@/components/DashboardShell";
 import StatusBadge from "@/components/StatusBadge";
 import DeadlinePill from "@/components/DeadlinePill";
 import RequestActions from "./RequestActions";
-import { getActiveDeadline, formatDate } from "@/lib/deadlines";
+import { getActiveDeadline, formatDate, formatDateTime } from "@/lib/deadlines";
 import {
   REQUEST_TYPE_LABELS,
   DELIVERY_METHOD_LABELS,
@@ -227,7 +227,7 @@ export default async function RequestDetailPage({
                   label="Hearing scheduled"
                   value={
                     request.hearingScheduledAt
-                      ? request.hearingScheduledAt.toLocaleString("en-US")
+                      ? formatDateTime(request.hearingScheduledAt)
                       : "—"
                   }
                 />
@@ -356,7 +356,7 @@ function ActivityLog({ activities }: { activities: Activity[] }) {
           <div>
             <p className="text-sm text-ink-soft">{a.message}</p>
             <p className="text-xs text-ink-muted">
-              {a.createdAt.toLocaleString("en-US")}
+              {formatDateTime(a.createdAt)}
               {a.actor ? ` · ${a.actor}` : ""}
             </p>
           </div>

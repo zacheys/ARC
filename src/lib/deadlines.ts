@@ -12,6 +12,14 @@ export const HEARING_DEADLINE_DAYS = 30;
 
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
+/**
+ * All customers are Texas HOAs and §209.00505 deadlines are calendar-day based,
+ * so every date/time is displayed AND every calendar-day comparison is done in
+ * Central time — regardless of server (UTC on Vercel) or viewer timezone.
+ * Storage stays UTC; this only affects rendering and day arithmetic.
+ */
+export const TIME_ZONE = "America/Chicago";
+
 // --------------------------------------------------------------------------
 // Date helpers
 // --------------------------------------------------------------------------
@@ -22,20 +30,96 @@ export function addDays(date: Date, days: number): Date {
   return d;
 }
 
-/** Whole calendar days from now until `deadline`. Negative = overdue. */
-export function daysRemaining(deadline: Date, now: Date = new Date()): number {
-  const startOfDay = (d: Date) =>
-    new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  return Math.round((startOfDay(deadline) - startOfDay(now)) / MS_PER_DAY);
+/**
+ * The UTC-anchored midnight of the calendar day on which `date` falls IN
+ * CENTRAL TIME. Used only for whole-day differences so DST never shifts a
+ * deadline by a day. (Anchoring the Central Y/M/D to UTC midnight gives a
+ * stable, DST-independent day index for subtraction.)
+ */
+function centralDayStartUtc(date: Date): number {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone: TIME_ZONE,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const get = (t: string) => Number(parts.find((p) => p.type === t)!.value);
+  return Date.UTC(get("year"), get("month") - 1, get("day"));
 }
 
+/** Whole Central-calendar days from now until `deadline`. Negative = overdue. */
+export function daysRemaining(deadline: Date, now: Date = new Date()): number {
+  return Math.round(
+    (centralDayStartUtc(deadline) - centralDayStartUtc(now)) / MS_PER_DAY
+  );
+}
+
+/** Date only, e.g. "July 6, 2026" — always in Central time. */
 export function formatDate(date: Date | string): string {
   const d = typeof date === "string" ? new Date(date) : date;
   return d.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: TIME_ZONE,
   });
+}
+
+/** Date + time with zone label, e.g. "July 6, 2026, 3:14 PM CDT". */
+export function formatDateTime(date: Date | string): string {
+  const d = typeof date === "string" ? new Date(date) : date;
+  return d.toLocaleString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZone: TIME_ZONE,
+    timeZoneName: "short",
+  });
+}
+
+/** Minutes UTC is ahead of Central at `date` (300 for CDT, 360 for CST). */
+function centralOffsetMinutes(date: Date): number {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: TIME_ZONE,
+    hourCycle: "h23",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  }).formatToParts(date);
+  const g = (t: string) => Number(parts.find((p) => p.type === t)!.value);
+  const wallAsUtc = Date.UTC(
+    g("year"),
+    g("month") - 1,
+    g("day"),
+    g("hour"),
+    g("minute"),
+    g("second")
+  );
+  return Math.round((date.getTime() - wallAsUtc) / 60000);
+}
+
+/**
+ * The exact UTC instant of Central-time 00:00 on a "YYYY-MM-DD" date. Use for
+ * date-range filter boundaries so a Central calendar day maps to the correct
+ * UTC window (e.g. "to: July 6" includes submissions through 05:59Z July 7).
+ */
+export function centralStartOfDay(ymd: string): Date {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const utcMidnight = Date.UTC(y, m - 1, d);
+  const offset = centralOffsetMinutes(new Date(utcMidnight));
+  return new Date(utcMidnight + offset * 60000);
+}
+
+/** Central-time start of the day AFTER `ymd` — an exclusive upper bound. */
+export function centralEndOfDayExclusive(ymd: string): Date {
+  const [y, m, d] = ymd.split("-").map(Number);
+  const next = new Date(Date.UTC(y, m - 1, d + 1)).toISOString().slice(0, 10);
+  return centralStartOfDay(next);
 }
 
 // --------------------------------------------------------------------------
