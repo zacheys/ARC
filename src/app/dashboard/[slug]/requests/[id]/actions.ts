@@ -1,7 +1,9 @@
 "use server";
 
+import React from "react";
 import { revalidatePath } from "next/cache";
-import type { DeliveryMethod } from "@prisma/client";
+import { renderToBuffer } from "@react-pdf/renderer";
+import type { DeliveryMethod, RequestType } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { getSession } from "@/lib/auth";
 import { logActivity } from "@/lib/activity";
@@ -11,12 +13,21 @@ import {
   formatDate,
   formatDateTime,
 } from "@/lib/deadlines";
-import { STATUS_LABELS, DELIVERY_METHOD_LABELS } from "@/lib/labels";
+import {
+  STATUS_LABELS,
+  DELIVERY_METHOD_LABELS,
+  REQUEST_TYPE_LABELS,
+} from "@/lib/labels";
 import { sendEmail } from "@/lib/email";
+import { denialNoticeEmail } from "@/lib/email-templates";
+import { buildDenialLetter } from "@/lib/letter";
+import { DenialLetterDocument } from "@/lib/DenialLetterPdf";
 
 export interface ActionState {
   error?: string;
   ok?: boolean;
+  /** Denial saved, but the electronic notice email did not go out. */
+  warning?: string;
 }
 
 /** Load a request and confirm it belongs to the authenticated HOA. */
@@ -35,6 +46,106 @@ function refresh(slug: string, id: string) {
   revalidatePath(`/dashboard/${slug}/requests/${id}`);
   revalidatePath(`/dashboard/${slug}`);
   revalidatePath(`/dashboard/${slug}/archive`);
+}
+
+interface DenialNoticeInput {
+  id: string;
+  referenceNumber: string;
+  requestType: RequestType;
+  homeownerName: string;
+  homeownerEmail: string;
+  propertyAddress: string;
+  hoa: { name: string; logoUrl: string | null };
+}
+
+interface DenialFacts {
+  denialReasons: string;
+  denialRequiredChanges: string;
+  denialNoticeDate: Date;
+  deliveryMethod: DeliveryMethod;
+  appealRequestWindowAt: Date;
+}
+
+/**
+ * Email the electronic denial notice (with the PDF letter attached) to the
+ * homeowner. On success: store the Resend message id + log DENIAL_EMAIL_SENT.
+ * On failure: log a NOTE and return a warning — the denial itself stays saved.
+ */
+async function sendElectronicDenialNotice(
+  r: DenialNoticeInput,
+  d: DenialFacts
+): Promise<{ warning?: string }> {
+  try {
+    const letter = buildDenialLetter(
+      {
+        homeownerName: r.homeownerName,
+        propertyAddress: r.propertyAddress,
+        referenceNumber: r.referenceNumber,
+        requestType: r.requestType,
+        denialReasons: d.denialReasons,
+        denialRequiredChanges: d.denialRequiredChanges,
+        denialNoticeDate: d.denialNoticeDate,
+        denialDeliveryMethod: d.deliveryMethod,
+        appealRequestWindowAt: d.appealRequestWindowAt,
+      },
+      r.hoa
+    );
+    const pdf = await renderToBuffer(
+      React.createElement(DenialLetterDocument, { letter }) as Parameters<
+        typeof renderToBuffer
+      >[0]
+    );
+
+    const email = denialNoticeEmail({
+      hoaName: r.hoa.name,
+      homeownerName: r.homeownerName,
+      referenceNumber: r.referenceNumber,
+      propertyAddress: r.propertyAddress,
+      requestTypeLabel: REQUEST_TYPE_LABELS[r.requestType],
+      denialReasons: d.denialReasons,
+      denialRequiredChanges: d.denialRequiredChanges,
+      noticeDate: d.denialNoticeDate,
+      appealDeadline: d.appealRequestWindowAt,
+    });
+
+    const res = await sendEmail({
+      to: r.homeownerEmail,
+      ...email,
+      attachments: [
+        { filename: `denial-${r.referenceNumber}.pdf`, content: pdf },
+      ],
+    });
+
+    // In dev (no RESEND_API_KEY) the stub returns id "dev-stub" — treat as sent
+    // so the flow is testable; a real failure carries res.error.
+    const delivered = res.sent || res.id === "dev-stub";
+    if (!delivered) {
+      throw new Error(res.error ?? "Email provider did not confirm delivery.");
+    }
+
+    await prisma.request.update({
+      where: { id: r.id },
+      data: { denialEmailMessageId: res.id ?? null, denialEmailSentAt: new Date() },
+    });
+    await logActivity(
+      r.id,
+      "DENIAL_EMAIL_SENT",
+      `Denial notice emailed to ${r.homeownerEmail} (electronic delivery).`,
+      { actor: "system", metadata: res.id ? { messageId: res.id } : undefined }
+    );
+    return {};
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : "unknown error";
+    await logActivity(
+      r.id,
+      "NOTE",
+      `⚠️ Electronic denial notice could NOT be emailed to ${r.homeownerEmail}: ${msg}. The denial is recorded — please deliver the notice by another method.`,
+      { actor: "system" }
+    );
+    return {
+      warning: `The denial was saved, but the electronic notice email failed to send (${msg}). Please deliver the notice another way.`,
+    };
+  }
 }
 
 export async function setUnderReview(
@@ -141,8 +252,33 @@ export async function deny(
     { actor: "committee", metadata: { deliveryMethod } }
   );
 
+  // Electronic delivery: email the homeowner the notice + PDF. Certified mail
+  // and hand delivery are handled out-of-band (no email).
+  let warning: string | undefined;
+  if (deliveryMethod === "ELECTRONIC") {
+    const notice = await sendElectronicDenialNotice(
+      {
+        id,
+        referenceNumber: auth.request.referenceNumber,
+        requestType: auth.request.requestType,
+        homeownerName: auth.request.homeownerName,
+        homeownerEmail: auth.request.homeownerEmail,
+        propertyAddress: auth.request.propertyAddress,
+        hoa: { name: auth.request.hoa.name, logoUrl: auth.request.hoa.logoUrl },
+      },
+      {
+        denialReasons,
+        denialRequiredChanges,
+        denialNoticeDate,
+        deliveryMethod,
+        appealRequestWindowAt,
+      }
+    );
+    warning = notice.warning;
+  }
+
   refresh(slug, id);
-  return { ok: true };
+  return warning ? { ok: true, warning } : { ok: true };
 }
 
 export async function requestAppeal(

@@ -3,11 +3,17 @@
 
 import { Resend } from "resend";
 
+export interface EmailAttachment {
+  filename: string;
+  content: Buffer;
+}
+
 export interface EmailMessage {
   to: string | string[];
   subject: string;
   html: string;
   text?: string;
+  attachments?: EmailAttachment[];
 }
 
 const apiKey = process.env.RESEND_API_KEY;
@@ -34,6 +40,9 @@ export async function sendEmail(
         `From:    ${from}`,
         `To:      ${cleanRecipients.join(", ")}`,
         `Subject: ${msg.subject}`,
+        msg.attachments?.length
+          ? `Attachments: ${msg.attachments.map((a) => a.filename).join(", ")}`
+          : "",
         "────────────────────────────────────────────────────────",
         msg.text ?? stripHtml(msg.html),
         "────────────────────────────────────────────────────────",
@@ -50,6 +59,9 @@ export async function sendEmail(
       subject: msg.subject,
       html: msg.html,
       text: msg.text ?? stripHtml(msg.html),
+      ...(msg.attachments?.length
+        ? { attachments: msg.attachments.map((a) => ({ filename: a.filename, content: a.content })) }
+        : {}),
     });
     if (error) return { sent: false, error: error.message };
     return { sent: true, id: data?.id };

@@ -45,6 +45,69 @@ export function verificationEmail(args: {
   };
 }
 
+const escapeHtml = (s: string) =>
+  s
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+
+/** Free text -> escaped HTML preserving line breaks. */
+const richText = (s: string) => escapeHtml(s).replace(/\n/g, "<br/>");
+
+export function denialNoticeEmail(args: {
+  hoaName: string;
+  homeownerName: string;
+  referenceNumber: string;
+  propertyAddress: string;
+  requestTypeLabel: string;
+  denialReasons: string;
+  denialRequiredChanges: string;
+  noticeDate: Date;
+  appealDeadline: Date;
+}) {
+  const body = `
+    <p style="font-size:14px; line-height:1.6;">Dear ${escapeHtml(
+      args.homeownerName
+    )},</p>
+    <p style="font-size:14px; line-height:1.6;">
+      After review, the Architectural Review Committee of
+      <strong>${escapeHtml(args.hoaName)}</strong> has
+      <strong>denied</strong> your architectural request. The formal denial
+      notice is attached to this email as a PDF.
+    </p>
+    <table style="border-collapse:collapse; margin:16px 0;">
+      ${row("Reference #", `<strong>${escapeHtml(args.referenceNumber)}</strong>`)}
+      ${row("Request type", escapeHtml(args.requestTypeLabel))}
+      ${row("Property", escapeHtml(args.propertyAddress))}
+      ${row("Notice date", formatDate(args.noticeDate))}
+    </table>
+
+    <h2 style="font-size:15px; margin:20px 0 4px;">Reasons for denial</h2>
+    <p style="font-size:14px; line-height:1.6;">${richText(args.denialReasons)}</p>
+
+    <h2 style="font-size:15px; margin:20px 0 4px;">Changes that would result in approval</h2>
+    <p style="font-size:14px; line-height:1.6;">${richText(
+      args.denialRequiredChanges
+    )}</p>
+
+    <div style="margin:20px 0; padding:14px 16px; background:#f7f9fb; border-left:3px solid #243b53;">
+      <p style="margin:0; font-size:14px; line-height:1.6;">
+        <strong>Your right to a hearing.</strong> Under Texas Property Code
+        &sect;209.00505, you may request a hearing before the Board of Directors
+        regarding this decision. To do so, submit a written request to the
+        Association within 30 days of the notice date &mdash; on or before
+        <strong>${formatDate(args.appealDeadline)}</strong>. If you timely
+        request a hearing, the Board will hold it within 30 days of receiving
+        your request.
+      </p>
+    </div>`;
+  return {
+    subject: `Architectural Request Denied — ${args.hoaName}`,
+    html: wrap("Notice of denial", body),
+  };
+}
+
 export function homeownerConfirmationEmail(args: {
   hoaName: string;
   homeownerName: string;
