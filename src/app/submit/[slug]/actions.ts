@@ -6,7 +6,12 @@ import { prisma } from "@/lib/prisma";
 import { logActivity } from "@/lib/activity";
 import { buildReferenceNumber } from "@/lib/reference";
 import { computeReviewDeadline } from "@/lib/deadlines";
-import { uploadFile, isBlobConfigured, MAX_FILES } from "@/lib/blob";
+import {
+  MAX_FILES,
+  SUBMISSION_IMAGE_TYPES,
+  SUBMISSION_MAX_FILE_BYTES,
+  isSubmissionBlobUrl,
+} from "@/lib/blob";
 import { sendEmail } from "@/lib/email";
 import {
   homeownerConfirmationEmail,
@@ -27,6 +32,59 @@ const VALID_TYPES: RequestType[] = [
 
 export interface SubmitState {
   error?: string;
+}
+
+interface ValidAttachment {
+  url: string;
+  pathname: string;
+  contentType: string;
+  filename: string;
+  size: number;
+}
+
+/**
+ * Parse + validate client-supplied attachment metadata. Only keeps entries
+ * whose URL is genuinely in our Blob store under submissions/, with an allowed
+ * image type and a sane size — never trusts the client blindly.
+ */
+function parseAttachments(raw: FormDataEntryValue | null): ValidAttachment[] {
+  if (typeof raw !== "string" || !raw.trim()) return [];
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(raw);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(parsed)) return [];
+
+  const out: ValidAttachment[] = [];
+  for (const item of parsed) {
+    if (!item || typeof item !== "object") continue;
+    const { url, pathname, contentType, filename, size } = item as Record<
+      string,
+      unknown
+    >;
+    if (
+      typeof url === "string" &&
+      isSubmissionBlobUrl(url) &&
+      typeof contentType === "string" &&
+      SUBMISSION_IMAGE_TYPES.includes(contentType) &&
+      typeof filename === "string" &&
+      filename.length > 0 &&
+      typeof size === "number" &&
+      size > 0 &&
+      size <= SUBMISSION_MAX_FILE_BYTES
+    ) {
+      out.push({
+        url,
+        pathname: typeof pathname === "string" ? pathname : "",
+        contentType,
+        filename: filename.slice(0, 255),
+        size,
+      });
+    }
+  }
+  return out;
 }
 
 export async function submitRequest(
@@ -53,12 +111,11 @@ export async function submitRequest(
       error: "Please describe your request (at least a sentence).",
     };
 
-  const files = formData
-    .getAll("files")
-    .filter((f): f is File => f instanceof File && f.size > 0);
-
-  if (files.length > MAX_FILES)
-    return { error: `Please attach at most ${MAX_FILES} files.` };
+  // Photos are uploaded directly to Blob from the browser; the form submits
+  // only their metadata. Validate that each URL is really in our Blob store.
+  const attachments = parseAttachments(formData.get("attachments"));
+  if (attachments.length > MAX_FILES)
+    return { error: `Please attach at most ${MAX_FILES} photos.` };
 
   const hoa = await prisma.hoa.findUnique({ where: { slug } });
   if (!hoa) return { error: "Association not found." };
@@ -104,27 +161,17 @@ export async function submitRequest(
     { actor: "homeowner" }
   );
 
-  // Upload attachments (best effort — dev without a Blob token still works).
-  if (files.length > 0) {
-    if (isBlobConfigured()) {
-      for (const file of files) {
-        try {
-          const uploaded = await uploadFile(file, `requests/${request.id}`);
-          await prisma.attachment.create({
-            data: { requestId: request.id, ...uploaded },
-          });
-        } catch (e) {
-          console.error("Attachment upload failed:", e);
-        }
-      }
-    } else {
-      await logActivity(
-        request.id,
-        "NOTE",
-        `${files.length} file(s) were submitted but not stored (Blob storage not configured in this environment).`,
-        { actor: "system" }
-      );
-    }
+  // Persist attachment metadata for the (already-uploaded) Blob objects.
+  if (attachments.length > 0) {
+    await prisma.attachment.createMany({
+      data: attachments.map((a) => ({
+        requestId: request.id,
+        url: a.url,
+        filename: a.filename,
+        contentType: a.contentType,
+        size: a.size,
+      })),
+    });
   }
 
   // Emails (homeowner confirmation + committee notification)
