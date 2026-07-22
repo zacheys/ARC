@@ -3,7 +3,7 @@ import Footer from "@/components/Footer";
 import Brand from "@/components/Brand";
 
 // Placeholder contact address — change to your real sales inbox.
-const CONTACT_EMAIL = "hello@arctrack.example.com";
+const CONTACT_EMAIL = "zachary@arctrack.org";
 
 const CLOCKS = [
   {

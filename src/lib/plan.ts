@@ -1,7 +1,7 @@
 import type { Hoa } from "@prisma/client";
 
 // Contact address shown when a trial has ended. Change to your real inbox.
-export const BILLING_CONTACT_EMAIL = "hello@arctrack.example.com";
+export const BILLING_CONTACT_EMAIL = "zachary@arctrack.org";
 
 type PlanFields = Pick<Hoa, "plan" | "trialEndsAt">;
 
