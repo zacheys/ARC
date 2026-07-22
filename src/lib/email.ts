@@ -17,7 +17,7 @@ export interface EmailMessage {
 }
 
 const apiKey = process.env.RESEND_API_KEY;
-const from = process.env.EMAIL_FROM || "ARCTrack <notifications@example.com>";
+const from = process.env.EMAIL_FROM || "ARCTrack <notifications@arctrack.org>";
 
 const resend = apiKey ? new Resend(apiKey) : null;
 
